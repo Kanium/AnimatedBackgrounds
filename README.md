@@ -20,6 +20,16 @@ A dark Background with randomly mazing neon glowing lights
 - Logo with pulsating "Corona"
 - Customizeable neon "blits" mazing and leaving trails
 
+## PixelFall
+Pixels with simple collision detection fall from the sky onto a customizeable logo.
+
+![alt text](https://i.gyazo.com/c15046fb3a19ec23e1ea8cf41d6be1db.png)
+
+### Features
+- Falling, Glowing Particles
+- Simple collision detection with Customizeable logo
+- Converts 128x72 pixel image into the collideable "structure"
+
 
 ## Building/Compiling
 https://love2d.org/wiki/Game_Distribution

@@ -34,7 +34,7 @@ function love.load()
 	
 	drops = {}
 	deadDrops = 0
-	dropNum = 100
+	dropNum = 200
 	tick = 0
 	spawnTick = 0
 end
@@ -105,8 +105,8 @@ function newDrop()
 	end
 	drop.dir = 2
 	drop.trail = {}
-	drop.trailMax = 5
-	drop.lifetime = love.math.random(70,90)
+	drop.trailMax = 20
+	drop.lifetime = love.math.random(80,100)
 	drops[1+#drops] = drop
 end
 
@@ -131,27 +131,35 @@ function moveDrops()
 				end
 			elseif drops[i].dir == 1 then
 				--left
-				if map[drops[i].x - 1][drops[i].y] < 1 then
-					drops[i].x = drops[i].x - 1
-					if map[drops[i].x][drops[i].y + 1] < 1 then
-						drops[i].dir = 2
+				if drops[i].x-1 > 0 then
+					if map[drops[i].x - 1][drops[i].y] < 1 then
+						drops[i].x = drops[i].x - 1
+						if map[drops[i].x][drops[i].y + 1] < 1 then
+							drops[i].dir = 2
+						end
+					else
+						if map[drops[i].x][drops[i].y + 1] == 1 then
+							drops[i].dir = 3
+						end
 					end
 				else
-					if map[drops[i].x][drops[i].y + 1] == 1 then
-						drops[i].dir = 3
-					end
+					drops[i].lifetime = 0
 				end
 			elseif drops[i].dir == 3 then
 				--right
-				if map[drops[i].x + 1][drops[i].y] < 1 then
-					drops[i].x = drops[i].x + 1
-					if map[drops[i].x][drops[i].y + 1] < 1 then
-						drops[i].dir = 2
+				if drops[i].x+1 < screenWidth/10 then
+					if map[drops[i].x + 1][drops[i].y] < 1 then
+						drops[i].x = drops[i].x + 1
+						if map[drops[i].x][drops[i].y + 1] < 1 then
+							drops[i].dir = 2
+						end
+					else
+						if map[drops[i].x][drops[i].y + 1] == 1 then
+							drops[i].dir = 1
+						end
 					end
 				else
-					if map[drops[i].x][drops[i].y + 1] == 1 then
-						drops[i].dir = 1
-					end
+					drops[i].lifetime = 0
 				end
 			end
 			table.insert(drops[i].trail,1,{drops[i].x,drops[i].y})

@@ -9,12 +9,14 @@ function love.load()
 	scale = 1
 	logo = love.image.newImageData("logo.png")
 	map = {}
+	
 	for i = 0, logo:getWidth() do
 		map[i] = {}
 		for j = 0, logo:getHeight() do
 			map[i][j] = 0
 		end
 	end
+
 	for i = 0, logo:getWidth()-1 do
 		for j = 0, logo:getHeight()-1 do
 			r, g, b, a = logo:getPixel( i, j )
@@ -155,7 +157,6 @@ function moveDrops()
 				table.remove(drops[i].trail,#drops[i].trail)
 		    end
 			decreaseDropLifetime(i)
-
 		end
 		decreaseDropTrailMaxIfDying(i)
 		checkIfDropIsDead(i)

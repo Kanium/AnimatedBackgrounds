@@ -27,7 +27,7 @@ function love.load()
 		end
 	end
 	
-	effect = moonshine(1280, 720, moonshine.effects.glow).chain(moonshine.effects.boxblur)
+	effect = moonshine(screenWidth, screenHeight, moonshine.effects.glow).chain(moonshine.effects.boxblur)
 	effect.glow.strength = 10
 	effect.glow.min_luma = 0.0001
 	effect.boxblur.radius = {2,2}
@@ -44,11 +44,13 @@ function love.resize(w, h)
 	screenHeight = love.graphics.getHeight()
 	effect.resize(screenWidth, screenHeight)
 	scale = screenHeight/720
+	drops = {}
+	
 end
 
 function love.update()
 	if tick >= 10 then
-		moveDrops()
+		moveDrops() 
 		tick = tick - 10
 	end
 	tick = tick + 1
@@ -112,71 +114,104 @@ end
 
 function moveDrops()
 	for i = 1,#drops do
+
 		if drops[i].lifetime > 0 then
-		--move droplets here
+			--move droplets here
 			if drops[i].dir == 2 then
-				--down
-				if drops[i].y+1 < screenHeight/10 then
-					if map[drops[i].x][drops[i].y+1] < 1 then
-						drops[i].y = drops[i].y + 1
-					else
-						if love.math.random(1,2) == 1 then
-							drops[i].dir = 1
-						else
-							drops[i].dir = 3
-						end
-					end
-				else
-					drops[i].lifetime = 0
-				end
+				local status, err = pcall(function () moveDropDownwards(i) end)
+				print('ERROR: Moving drop downwards - ', err)
 			elseif drops[i].dir == 1 then
-				--left
-				if drops[i].x-1 > 0 then
-					if map[drops[i].x - 1][drops[i].y] < 1 then
-						drops[i].x = drops[i].x - 1
-						if map[drops[i].x][drops[i].y + 1] < 1 then
-							drops[i].dir = 2
-						end
-					else
-						if map[drops[i].x][drops[i].y + 1] == 1 then
-							drops[i].dir = 3
-						end
-					end
-				else
-					drops[i].lifetime = 0
-				end
+				local status, err = pcall(function () moveDropLeft(i) end)
+				print('ERROR: Moving drop left - ', err)
 			elseif drops[i].dir == 3 then
-				--right
-				if drops[i].x+1 < screenWidth/10 then
-					if map[drops[i].x + 1][drops[i].y] < 1 then
-						drops[i].x = drops[i].x + 1
-						if map[drops[i].x][drops[i].y + 1] < 1 then
-							drops[i].dir = 2
-						end
-					else
-						if map[drops[i].x][drops[i].y + 1] == 1 then
-							drops[i].dir = 1
-						end
-					end
-				else
-					drops[i].lifetime = 0
-				end
+				local status, err = pcall(function () moveDropRight(i) end)
+				print('ERROR: Moving drop right - ', err)
 			end
+			
+			-- What do
 			table.insert(drops[i].trail,1,{drops[i].x,drops[i].y})
+		    -- Remove trail 
+			while #drops[i].trail > drops[i].trailMax do
+				table.remove(drops[i].trail,#drops[i].trail)			
+		    end
+			
 		end
-		while #drops[i].trail > drops[i].trailMax do
-			table.remove(drops[i].trail,#drops[i].trail)
+		decreaseDropLifetime(i)
+		removeDeadDrop(i)
+	end
+end
+
+
+function moveDropDownwards(i)
+--down
+	if drops[i].y+1 < screenHeight/10 then
+		if map[drops[i].x][drops[i].y+1] < 1 then
+			drops[i].y = drops[i].y + 1
+		else
+			if love.math.random(1,2) == 1 then
+				drops[i].dir = 1
+			else
+				drops[i].dir = 3
+			end
 		end
-		drops[i].lifetime = drops[i].lifetime - 1
-		if drops[i].lifetime <= 0 then
-			if #drops[i].trail > 0 then
-				drops[i].trailMax = drops[i].trailMax-1
+	else
+		drops[i].lifetime = 0
+	end
+end
+
+function moveDropLeft(i)
+--left
+	if drops[i].x-1 > 0 then
+    	if map[drops[i].x - 1][drops[i].y] < 1 then
+      		drops[i].x = drops[i].x - 1
+	    	if map[drops[i].x][drops[i].y + 1] < 1 then
+		 	   drops[i].dir = 2
+        	end
+    	else
+  			if map[drops[i].x][drops[i].y + 1] == 1 then
+			   drops[i].dir = 3
 			end
-			if #drops[i].trail == 0 then
-				deadDrops = deadDrops + 1
+		end
+	else
+		drops[i].lifetime = 0
+	end
+end
+
+function moveDropRight(i)
+--right
+	if drops[i].x+1 < screenWidth/10 then
+		if map[drops[i].x + 1][drops[i].y] < 1 then
+			drops[i].x = drops[i].x + 1
+			if map[drops[i].x][drops[i].y + 1] < 1 then
+				drops[i].dir = 2
 			end
+		else
+			if map[drops[i].x][drops[i].y + 1] == 1 then
+				drops[i].dir = 1
+			end
+		end
+	else
+		drops[i].lifetime = 0
+	end
+end
+
+function decreaseDropLifetime(i)
+	drops[i].lifetime = drops[i].lifetime - 1
+	decreaseDropTrailIfDying(i)
+end
+
+function decreaseDropTrailIfDying(i)
+	if drops[i].lifetime <= 0 then
+		if #drops[i].trail > 0 then
+			drops[i].trailMax = drops[i].trailMax-1
+		end
+		if #drops[i].trail == 0 then
+			deadDrops = deadDrops + 1
 		end
 	end
+end
+
+function removeDeadDrop()
 	while deadDrops > 0 do
 		for i = 1,#drops do
 			if drops[i].lifetime <= 0 and #drops[i].trail == 0 then

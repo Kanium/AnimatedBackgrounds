@@ -34,9 +34,11 @@ function love.load()
 	
 	drops = {}
 	deadDrops = 0
-	dropNum = 200
+	dropNum = 1
 	tick = 0
 	spawnTick = 0
+	moveTick = 10
+	spawnTick = 200
 end
 
 function love.resize(w, h)
@@ -49,16 +51,24 @@ function love.resize(w, h)
 end
 
 function love.update()
-	if tick >= 10 then
+	moveDropAfterNumberOfTicks(moveTick)
+	spawnDropAfterNumberOfTicks(spawnTick)
+end
+
+function moveDropAfterNumberOfTicks(i)
+	if tick >= i then
 		moveDrops() 
-		tick = tick - 10
+		tick = 0
 	end
 	tick = tick + 1
-	if spawnTick >= 20 then
+end
+
+function spawnDropAfterNumberOfTicks(i)
+	if spawnTick >= i then
 		if #drops < dropNum then
 			newDrop()
 		end
-		spawnTick = spawnTick - 20
+		spawnTick = 0
 	end
 	spawnTick = spawnTick + 1
 end
@@ -113,30 +123,42 @@ function newDrop()
 end
 
 function moveDrops()
-	for i = 1,#drops do
+	for i = 1, #drops do
+
+		print('=== Determining Drop condition ===')
+		print('Dead Drops: ', deadDrops)
+		print('Drop lifetime is: ', drops[i].lifetime)
+		print('Drop trail size is: ',#drops[i].trail)
+		print('Drop trailMax is: ', drops[i].trailMax)
 
 		if drops[i].lifetime > 0 then
 			--move droplets here
 			if drops[i].dir == 2 then
+				print('Drop is going downwards...')
 				local status, err = pcall(function () moveDropDownwards(i) end)
-				print('ERROR: Moving drop downwards - ', err)
+				--print('ERROR: Moving drop downwards - ', err)
 			elseif drops[i].dir == 1 then
+				print('Drop is going left...')
 				local status, err = pcall(function () moveDropLeft(i) end)
-				print('ERROR: Moving drop left - ', err)
+				--print('ERROR: Moving drop left - ', err)
 			elseif drops[i].dir == 3 then
+				print('Drop is going right...')
 				local status, err = pcall(function () moveDropRight(i) end)
-				print('ERROR: Moving drop right - ', err)
+				--print('ERROR: Moving drop right - ', err)
 			end
 			
 			-- What do
 			table.insert(drops[i].trail,1,{drops[i].x,drops[i].y})
-		    -- Remove trail 
+			-- Remove trail 
 			while #drops[i].trail > drops[i].trailMax do
-				table.remove(drops[i].trail,#drops[i].trail)			
+				print('Drop trail is bigger than trailMax! Removing trail from Drop, trail is: ',#drops[i].trail)
+				table.remove(drops[i].trail,#drops[i].trail)
 		    end
-			
+			decreaseDropLifetime(i)
+
 		end
-		decreaseDropLifetime(i)
+		decreaseDropTrailMaxIfDying(i)
+		checkIfDropIsDead(i)
 		removeDeadDrop(i)
 	end
 end
@@ -197,26 +219,41 @@ end
 
 function decreaseDropLifetime(i)
 	drops[i].lifetime = drops[i].lifetime - 1
-	decreaseDropTrailIfDying(i)
 end
 
-function decreaseDropTrailIfDying(i)
+function decreaseDropTrailMaxIfDying(i)
+
 	if drops[i].lifetime <= 0 then
 		if #drops[i].trail > 0 then
 			drops[i].trailMax = drops[i].trailMax-1
 		end
-		if #drops[i].trail == 0 then
-			deadDrops = deadDrops + 1
-		end
+		checkIfDropIsDead(i)
+	end
+	--if drops[i].lifetime = 0 then
+	--	if #drops[i].trail > 0 then
+	--		print('Drop lifetime is 0 or below, decreasing trailMax')
+	--		drops[i].trailMax = drops[i].trailMax-1
+	--	end
+	--end
+end
+
+function checkIfDropIsDead(i)
+	if #drops[i].trail == 0 then
+		print('Drop died X_X')
+		deadDrops = deadDrops + 1
 	end
 end
 
-function removeDeadDrop()
+function removeDeadDrop(i)
+	print('Checking if drop is dead... ')
 	while deadDrops > 0 do
+		print(deadDrops, 'Dead drops detected...')
 		for i = 1,#drops do
-			if drops[i].lifetime <= 0 and #drops[i].trail == 0 then
-				table.remove(drops,i)
+			print('Acting on dead drop #: ', i)
+			if drops[i].lifetime <= 0 then
+				table.remove(drops, i)
 				deadDrops = deadDrops - 1
+				print('Successfully removed dead drop #: ', i)
 				break
 			end
 		end

@@ -9,7 +9,7 @@ function love.load()
 	scale = 1
 	logo = love.image.newImageData("logo.png")
 	map = {}
-	
+
 	for i = 0, logo:getWidth() do
 		map[i] = {}
 		for j = 0, logo:getHeight() do
@@ -36,11 +36,11 @@ function love.load()
 	
 	drops = {}
 	deadDrops = 0
-	dropNum = 1
+	dropNum = 10
 	tick = 0
-	spawnTick = 0
-	moveTick = 10
-	spawnTick = 200
+	spawnTick = 100
+	spawnTickCounter = 0
+	moveTick = 5
 end
 
 function love.resize(w, h)
@@ -49,7 +49,6 @@ function love.resize(w, h)
 	effect.resize(screenWidth, screenHeight)
 	scale = screenHeight/720
 	drops = {}
-	
 end
 
 function love.update()
@@ -59,20 +58,20 @@ end
 
 function moveDropAfterNumberOfTicks(i)
 	if tick >= i then
-		moveDrops() 
+		moveDrops()
 		tick = 0
 	end
 	tick = tick + 1
 end
 
 function spawnDropAfterNumberOfTicks(i)
-	if spawnTick >= i then
+	if spawnTickCounter >= i then
 		if #drops < dropNum then
 			newDrop()
 		end
-		spawnTick = 0
+		spawnTickCounter = 0
 	end
-	spawnTick = spawnTick + 1
+	spawnTickCounter = spawnTickCounter + 1
 end
 
 function love.draw()
@@ -127,11 +126,11 @@ end
 function moveDrops()
 	for i = 1, #drops do
 
-		print('=== Determining Drop condition ===')
-		print('Dead Drops: ', deadDrops)
-		print('Drop lifetime is: ', drops[i].lifetime)
-		print('Drop trail size is: ',#drops[i].trail)
-		print('Drop trailMax is: ', drops[i].trailMax)
+		--print('=== Determining Drop condition ===')
+		--print('Dead Drops: ', deadDrops)
+		--print('Drop lifetime is: ', drops[i].lifetime)
+		--print('Drop trail size is: ',#drops[i].trail)
+		--print('Drop trailMax is: ', drops[i].trailMax)
 
 		if drops[i].lifetime > 0 then
 			--move droplets here
@@ -152,18 +151,23 @@ function moveDrops()
 			-- What do
 			table.insert(drops[i].trail,1,{drops[i].x,drops[i].y})
 			-- Remove trail 
-			while #drops[i].trail > drops[i].trailMax do
-				print('Drop trail is bigger than trailMax! Removing trail from Drop, trail is: ',#drops[i].trail)
-				table.remove(drops[i].trail,#drops[i].trail)
-		    end
+
 			decreaseDropLifetime(i)
 		end
 		decreaseDropTrailMaxIfDying(i)
+		reduceTrailThatExceedsTrailMax(i)
 		checkIfDropIsDead(i)
-		removeDeadDrop(i)
+		removeDeadDrop()
 	end
 end
 
+
+function reduceTrailThatExceedsTrailMax(i)
+	while #drops[i].trail > drops[i].trailMax do
+		print('Drop trail is bigger than trailMax! Removing trail from Drop, trail is: ',#drops[i].trail)
+		table.remove(drops[i].trail,#drops[i].trail)
+	end
+end
 
 function moveDropDownwards(i)
 --down
@@ -245,8 +249,8 @@ function checkIfDropIsDead(i)
 	end
 end
 
-function removeDeadDrop(i)
-	print('Checking if drop is dead... ')
+function removeDeadDrop()
+	print('Checking for dead drops... ')
 	while deadDrops > 0 do
 		print(deadDrops, 'Dead drops detected...')
 		for i = 1,#drops do

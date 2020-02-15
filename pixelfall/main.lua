@@ -54,6 +54,135 @@ end
 function love.update()
 	moveDropAfterNumberOfTicks(moveTick)
 	spawnDropAfterNumberOfTicks(spawnTick)
+	removeDeadDrops()
+end
+
+Drop = {}
+function Drop:new()
+	local drop = {}
+
+	drop.x = love.math.random(0,screenWidth/10)
+	drop.y = love.math.random(0,0)
+	drop.colorR = 0
+	drop.colorG = 0
+	drop.colorB = 0
+	while (drop.colorR + drop.colorB + drop.colorG < 1.8) and (drop.colorR < 1 and drop.colorB < 1 and drop.colorG < 1) or (drop.colorR + drop.colorB + drop.colorG > 2.2) do
+		drop.colorR = 0--love.math.random(0,10)/10
+		drop.colorG = love.math.random(30,40)/100
+		drop.colorB = 1--love.math.random(0,10)/10
+	end
+	drop.dir = 2
+	drop.trail = {}
+	drop.trailMax = 20
+	drop.lifetime = love.math.random(80,100)
+
+	-- Setup "class-object" as this.
+	-- self is "Drop" here. Lowercase "drop" is the new object.
+	setmetatable(drop, self)
+	self.__index = self
+
+	return drop
+end
+
+function Drop:move()
+	if self.lifetime > 0 then
+		--move droplets here
+		if self.dir == 2 then
+			print('Drop is going downwards...')
+			self:moveDropDownwards()
+		elseif self.dir == 1 then
+			print('Drop is going left...')
+			self:moveDropLeft()
+		elseif self.dir == 3 then
+			print('Drop is going right...')
+			self:moveDropRight()
+		end
+		
+		-- What do
+		table.insert(self.trail,1,{self.x,self.y})
+		-- Remove trail 
+		self:decreaseLifetime()
+	end
+	self:decreaseDropTrailMaxIfDying()
+	self:reduceTrailThatExceedsTrailMax()
+	self:checkIfDropIsDead()
+end
+
+function Drop:moveDropDownwards()
+--down
+	if self.y+1 < screenHeight/10 then
+		if map[self.x][self.y+1] < 1 then
+			self.y = self.y + 1
+		else
+			if love.math.random(1,2) == 1 then
+				self.dir = 1
+			else
+				self.dir = 3
+			end
+		end
+	else
+		self.lifetime = 0
+	end
+end
+
+function Drop:moveDropLeft()
+--left
+	if self.x-1 > 0 then
+		if map[self.x - 1][self.y] < 1 then
+			self.x = self.x - 1
+			if map[self.x][self.y + 1] < 1 then
+			   self.dir = 2
+			end
+		else
+			if map[self.x][self.y + 1] == 1 then
+			   self.dir = 3
+			end
+		end
+	else
+		self.lifetime = 0
+	end
+end
+
+function Drop:moveDropRight()
+--right
+	if self.x+1 < screenWidth/10 then
+		if map[self.x + 1][self.y] < 1 then
+			self.x = self.x + 1
+			if map[self.x][self.y + 1] < 1 then
+				self.dir = 2
+			end
+		else
+			if map[self.x][self.y + 1] == 1 then
+				self.dir = 1
+			end
+		end
+	else
+		self.lifetime = 0
+	end
+end
+
+function Drop:decreaseLifetime()
+	self.lifetime = self.lifetime - 1
+end
+
+function Drop:decreaseDropTrailMaxIfDying()
+	if self.lifetime <= 0 then
+		if #self.trail > 0 then
+			self.trailMax = self.trailMax-1
+		end
+		self:checkIfDropIsDead(i)
+	end
+end
+
+function Drop:reduceTrailThatExceedsTrailMax()
+	while #self.trail > self.trailMax do
+		print('Drop trail is bigger than trailMax! Removing trail from Drop, trail is: ',#self.trail)
+		table.remove(self.trail,#self.trail)
+	end
+end
+
+function Drop:checkIfDropIsDead()
+	return #self.trail == 0 and self.lifetime <= 0
 end
 
 function moveDropAfterNumberOfTicks(i)
@@ -105,59 +234,18 @@ function love.draw()
 end
 
 function newDrop()
-	local drop = {}
-	drop.x = love.math.random(0,screenWidth/10)
-	drop.y = love.math.random(0,0)
-	drop.colorR = 0
-	drop.colorG = 0
-	drop.colorB = 0
-	while (drop.colorR + drop.colorB + drop.colorG < 1.8) and (drop.colorR < 1 and drop.colorB < 1 and drop.colorG < 1) or (drop.colorR + drop.colorB + drop.colorG > 2.2) do
-		drop.colorR = 0--love.math.random(0,10)/10
-		drop.colorG = love.math.random(30,40)/100
-		drop.colorB = 1--love.math.random(0,10)/10
-	end
-	drop.dir = 2
-	drop.trail = {}
-	drop.trailMax = 20
-	drop.lifetime = love.math.random(80,100)
+	local drop = Drop:new()
 	drops[1+#drops] = drop
 end
 
 function moveDrops()
 	for i = 1, #drops do
-
 		--print('=== Determining Drop condition ===')
 		--print('Dead Drops: ', deadDrops)
 		--print('Drop lifetime is: ', drops[i].lifetime)
 		--print('Drop trail size is: ',#drops[i].trail)
 		--print('Drop trailMax is: ', drops[i].trailMax)
-
-		if drops[i].lifetime > 0 then
-			--move droplets here
-			if drops[i].dir == 2 then
-				print('Drop is going downwards...')
-				local status, err = pcall(function () moveDropDownwards(i) end)
-				--print('ERROR: Moving drop downwards - ', err)
-			elseif drops[i].dir == 1 then
-				print('Drop is going left...')
-				local status, err = pcall(function () moveDropLeft(i) end)
-				--print('ERROR: Moving drop left - ', err)
-			elseif drops[i].dir == 3 then
-				print('Drop is going right...')
-				local status, err = pcall(function () moveDropRight(i) end)
-				--print('ERROR: Moving drop right - ', err)
-			end
-			
-			-- What do
-			table.insert(drops[i].trail,1,{drops[i].x,drops[i].y})
-			-- Remove trail 
-
-			decreaseDropLifetime(i)
-		end
-		decreaseDropTrailMaxIfDying(i)
-		reduceTrailThatExceedsTrailMax(i)
-		checkIfDropIsDead(i)
-		removeDeadDrop()
+		drops[i]:move()
 	end
 end
 
@@ -169,98 +257,17 @@ function reduceTrailThatExceedsTrailMax(i)
 	end
 end
 
-function moveDropDownwards(i)
---down
-	if drops[i].y+1 < screenHeight/10 then
-		if map[drops[i].x][drops[i].y+1] < 1 then
-			drops[i].y = drops[i].y + 1
+function removeDeadDrops()
+	-- Rather than worry about moving indices. Simply
+	-- keep the alive ones
+	local nextDrops = {}
+	for i=1,#drops do
+		if drops[i]:checkIfDropIsDead() then
+			deadDrops = deadDrops + 1
+			print('Successfully removed dead drop #: ', i)
 		else
-			if love.math.random(1,2) == 1 then
-				drops[i].dir = 1
-			else
-				drops[i].dir = 3
-			end
-		end
-	else
-		drops[i].lifetime = 0
-	end
-end
-
-function moveDropLeft(i)
---left
-	if drops[i].x-1 > 0 then
-    	if map[drops[i].x - 1][drops[i].y] < 1 then
-      		drops[i].x = drops[i].x - 1
-	    	if map[drops[i].x][drops[i].y + 1] < 1 then
-		 	   drops[i].dir = 2
-        	end
-    	else
-  			if map[drops[i].x][drops[i].y + 1] == 1 then
-			   drops[i].dir = 3
-			end
-		end
-	else
-		drops[i].lifetime = 0
-	end
-end
-
-function moveDropRight(i)
---right
-	if drops[i].x+1 < screenWidth/10 then
-		if map[drops[i].x + 1][drops[i].y] < 1 then
-			drops[i].x = drops[i].x + 1
-			if map[drops[i].x][drops[i].y + 1] < 1 then
-				drops[i].dir = 2
-			end
-		else
-			if map[drops[i].x][drops[i].y + 1] == 1 then
-				drops[i].dir = 1
-			end
-		end
-	else
-		drops[i].lifetime = 0
-	end
-end
-
-function decreaseDropLifetime(i)
-	drops[i].lifetime = drops[i].lifetime - 1
-end
-
-function decreaseDropTrailMaxIfDying(i)
-
-	if drops[i].lifetime <= 0 then
-		if #drops[i].trail > 0 then
-			drops[i].trailMax = drops[i].trailMax-1
-		end
-		checkIfDropIsDead(i)
-	end
-	--if drops[i].lifetime = 0 then
-	--	if #drops[i].trail > 0 then
-	--		print('Drop lifetime is 0 or below, decreasing trailMax')
-	--		drops[i].trailMax = drops[i].trailMax-1
-	--	end
-	--end
-end
-
-function checkIfDropIsDead(i)
-	if #drops[i].trail == 0 then
-		print('Drop died X_X')
-		deadDrops = deadDrops + 1
-	end
-end
-
-function removeDeadDrop()
-	print('Checking for dead drops... ')
-	while deadDrops > 0 do
-		print(deadDrops, 'Dead drops detected...')
-		for i = 1,#drops do
-			print('Acting on dead drop #: ', i)
-			if drops[i].lifetime <= 0 then
-				table.remove(drops, i)
-				deadDrops = deadDrops - 1
-				print('Successfully removed dead drop #: ', i)
-				break
-			end
+			table.insert(nextDrops, drops[i])
 		end
 	end
+	drops = nextDrops
 end

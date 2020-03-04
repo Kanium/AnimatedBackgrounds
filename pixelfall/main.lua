@@ -88,17 +88,13 @@ function Drop:move()
 	if self.lifetime > 0 then
 		--move droplets here
 		if self.dir == 2 then
-			print('Drop is going downwards...')
 			self:moveDropDownwards()
 		elseif self.dir == 1 then
-			print('Drop is going left...')
 			self:moveDropLeft()
 		elseif self.dir == 3 then
-			print('Drop is going right...')
 			self:moveDropRight()
 		end
 		
-		-- What do
 		table.insert(self.trail,1,{self.x,self.y})
 		-- Remove trail 
 		self:decreaseLifetime()
@@ -176,7 +172,6 @@ end
 
 function Drop:reduceTrailThatExceedsTrailMax()
 	while #self.trail > self.trailMax do
-		print('Drop trail is bigger than trailMax! Removing trail from Drop, trail is: ',#self.trail)
 		table.remove(self.trail,#self.trail)
 	end
 end
@@ -240,11 +235,6 @@ end
 
 function moveDrops()
 	for i = 1, #drops do
-		--print('=== Determining Drop condition ===')
-		--print('Dead Drops: ', deadDrops)
-		--print('Drop lifetime is: ', drops[i].lifetime)
-		--print('Drop trail size is: ',#drops[i].trail)
-		--print('Drop trailMax is: ', drops[i].trailMax)
 		drops[i]:move()
 	end
 end
@@ -252,7 +242,6 @@ end
 
 function reduceTrailThatExceedsTrailMax(i)
 	while #drops[i].trail > drops[i].trailMax do
-		print('Drop trail is bigger than trailMax! Removing trail from Drop, trail is: ',#drops[i].trail)
 		table.remove(drops[i].trail,#drops[i].trail)
 	end
 end
@@ -264,7 +253,6 @@ function removeDeadDrops()
 	for i=1,#drops do
 		if drops[i]:checkIfDropIsDead() then
 			deadDrops = deadDrops + 1
-			print('Successfully removed dead drop #: ', i)
 		else
 			table.insert(nextDrops, drops[i])
 		end
